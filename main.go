@@ -42,11 +42,30 @@ func main() {
 		return
 	}
 	airports := parseAirports(string(body))
+	for i := range airports {
+		resp2, err := http.Get("https://www.prioritypass.com" + airports[i].URL)
+		if err != nil {
+			log.Printf("failed to fetch airport page for %s: %v", airports[i].Name, err)
+			continue
+		}
+		body2, err := io.ReadAll(resp2.Body)
+		resp2.Body.Close()
+		if err != nil {
+			log.Printf("failed to read body for %s: %v", airports[i].Name, err)
+			continue
+		}
+		airports[i].Terminals = parseTerminals(string(body2))
+	}
 	for i, airport := range airports {
 		fmt.Printf("%d. %s\n", i+1, airport.Name)
 		fmt.Printf("   Country: %s\n", airport.Country)
 		fmt.Printf("   City: %s\n", airport.City)
-		fmt.Printf("   URL: %s\n\n", airport.URL)
+		fmt.Printf("   URL: %s\n", airport.URL)
+		fmt.Printf("   Terminals:\n")
+		for j, terminal := range airport.Terminals {
+			fmt.Printf("     %d. %s\n", j+1, terminal.Name)
+		}
+		fmt.Println()
 	}
 }
 
@@ -80,6 +99,24 @@ func parseAirports(html string) []Airport {
 		}
 	}
 	return airports
+}
+
+func parseTerminals(html string) []Terminal {
+	var terminals []Terminal
+	pattern := `<div class="terminal-name "[^>]*>\s*<div class="terminal-name-text">\s*([^<]+)\s*</div>\s*</div>`
+	re := regexp.MustCompile(pattern)
+	matches := re.FindAllStringSubmatch(html, -1)
+
+	for _, match := range matches {
+		if len(match) >= 2 {
+			name := strings.TrimSpace(match[1])
+			terminal := Terminal{
+				Name: name,
+			}
+			terminals = append(terminals, terminal)
+		}
+	}
+	return terminals
 }
 
 func extractLocationFromURL(url string) (country, city string) {
