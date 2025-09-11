@@ -10,10 +10,23 @@ import (
 )
 
 type Airport struct {
-	Name    string
-	URL     string
-	Country string
-	City    string
+	Name      string
+	URL       string
+	Country   string
+	City      string
+	Terminals []Terminal
+}
+
+type Terminal struct {
+	Name        string
+	Experiences []Experience
+}
+
+type Experience struct {
+	Name        string
+	URL         string
+	Category    string
+	Information map[string]string
 }
 
 func main() {
